@@ -42,6 +42,8 @@ Route::get('/pdfs/parecer/{estagio}', [PDFsController::class, 'parecer']);
 Route::get('/emails/enviar_para_analise_tecnica/{estagio}', [EmailController::class, 'enviar_para_analise_tecnica']);
 Route::get('/emails/enviar_para_analise_tecnica_renovacao/{estagio}', [EmailController::class, 'enviar_para_analise_tecnica_renovacao']);
 Route::get('/emails/enviar_para_parecerista/{estagio}', [EmailController::class, 'enviar_para_parecerista']);
+Route::get('/emails/alteracao/{estagio}', [EmailController::class, 'alteracao']); 
+Route::get('/emails/analise_rescisao/{estagio}', [EmailController::class, 'analise_rescisao']);
 
 
 # Login comunidade USP
@@ -78,6 +80,13 @@ Route::post('/analise_academica/{estagio}', [EstagioWorkflowController::class,'a
 Route::get('/voltar_analise_academica/{estagio}', [EstagioWorkflowController::class,'voltar_analise_academica']);
 Route::get('/editar_analise_academica/{estagio}', [EstagioWorkflowController::class,'editar_analise_academica']);
 
+# Rotas Cancelamento
+Route::get('/cancelar_estagio/{estagio}', [EstagioWorkflowController::class,'cancelar_estagio']);
+Route::get('/cancelar_cancelamento/{estagio}', [EstagioWorkflowController::class,'cancelar_cancelamento']);
+
+#Rotas Rescisão
+Route::get('/retornar_rescisao/{estagio}', [EstagioWorkflowController::class,'retornar_rescisao']);
+Route::post('/avaliacao/{estagio}', [EstagioWorkflowController::class,'avaliacao']);
 
 # Rotas Concluido
 Route::post('/rescisao/{estagio}', [EstagioWorkflowController::class,'rescisao']);
@@ -90,8 +99,10 @@ Route::post('/enviar_alteracao/{estagio}', [EstagioWorkflowController::class,'en
 # Rotas Análise da Alteração
 Route::post('/analise_tecnica_alteracao/{estagio}', [EstagioWorkflowController::class,'analise_tecnica_alteracao']);
 
+# Rotas Menu dos pareceristas
 Route::get('/parecer_merito', [PareceristaController::class,'parecerMerito']);
 Route::get('/meus_pareceres', [PareceristaController::class,'meusPareceres']);
+Route::get('/estagios_rescindidos', [PareceristaController::class,'estagiosRescindidos']);
 
 #alterar parecerista
 
@@ -100,5 +111,6 @@ Route::post('/parecer_merito/{estagio}', [EstagioController::class,'alterarParec
 #arquivos
 
 Route::post('/files/store', [FileController::class,'store']);
+Route::post('/files/store_relatorio', [FileController::class,'store_relatorio']);
 Route::post('/files/destroy', [FileController::class,'destroy']);
 

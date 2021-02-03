@@ -9,9 +9,14 @@ use Auth;
 use PDF;
 use App\Models\Estagio;
 use App\Models\User;
+use App\Models\Aditivo;
 use Illuminate\Support\Facades\Gate;
 use Uspdev\Replicado\Pessoa;
 use App\Mail\enviar_para_analise_tecnica_mail;
+use App\Mail\enviar_para_analise_tecnica_renovacao_mail;
+use App\Mail\assinatura_mail;
+use App\Mail\alteracao_mail;
+use App\Mail\enviar_analise_academica_mail;
 use Illuminate\Support\Facades\Mail;
 
 class EstagioWorkflowController extends Controller
@@ -31,14 +36,6 @@ class EstagioWorkflowController extends Controller
                 #$workflow = $estagio->workflow_get();
                 #$workflow->apply($estagio,'enviar_para_analise_tecnica');
                 $estagio->save();
-
-                // Envio de email
-                if(is_null($estagio->renovacao_parent_id))
-                {
-                    Mail::send(new enviar_para_analise_tecnica_mail($estagio));
-                } else {
-                    Mail::send(new enviar_para_analise_tecnica_renovacao_mail($estagio));
-                }
             }
         } else {
             request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
@@ -56,6 +53,9 @@ class EstagioWorkflowController extends Controller
             $estagio->save();
 
             if($request->analise_tecnica_action == 'concluir') {
+                $request->validate([
+                    'analise_tecnica' => 'required',
+                ]);
                 if(is_null($estagio->analise_academica)){
                     request()->session()->flash('alert-danger','Não existe parecer de mérito para esse estágio. Não é possível concluir.');
                     return redirect("/estagios/{$estagio->id}");
@@ -73,6 +73,7 @@ class EstagioWorkflowController extends Controller
                 $estagio->last_status = $estagio->status;
                 $estagio->status = 'assinatura';
                 $estagio->save();
+                Mail::send(new assinatura_mail($estagio));
                 return redirect("/estagios/{$estagio->id}");
             }
 
@@ -143,6 +144,7 @@ class EstagioWorkflowController extends Controller
             $estagio->last_status = $estagio->status;
             $estagio->status = 'em_analise_tecnica';
             $estagio->save(); 
+            Mail::send(new enviar_analise_academica_mail($estagio));
             request()->session()->flash('alert-info','Parecer incluído com sucesso! Estágio enviado para o setor de graduação');    
         } else {
             request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
@@ -200,15 +202,7 @@ class EstagioWorkflowController extends Controller
             if(empty($estagio->renovacao_parent_id)){
                 $renovacao->renovacao_parent_id = $estagio->id;
             }
-
-            $request->validate([
-                'renovacao_justificativa' => 'required',
-            ]);
-            $renovacao->renovacao_justificativa = $request->renovacao_justificativa;
-
-            /* Verificar quais campos mais dever ser zerado na renovanção */
             $renovacao->analise_tecnica = null;
-            $renovacao->analise_alteracao = null;
             $renovacao->horariocompativel = null;
             $renovacao->desempenhoacademico = null;
             $renovacao->atividadespertinentes= null;
@@ -216,6 +210,7 @@ class EstagioWorkflowController extends Controller
             $renovacao->tipodeferimento = null;
             $renovacao->condicaodeferimento = null;
             $renovacao->analise_academica = null;
+            $renovacao->analise_academica_user_id = null;
             $renovacao->save();
             $workflow = $renovacao->workflow_get();
             $workflow->apply($renovacao,'renovacao');
@@ -263,26 +258,80 @@ class EstagioWorkflowController extends Controller
 
     #Funções Alteração
 
-    public function enviar_alteracao(EstagioRequest $request, Estagio $estagio){
+    public function enviar_alteracao(Request $request, Estagio $estagio){
 
         if (Gate::allows('empresa',$estagio->cnpj)) {
-            $validated = $request->validated();
-            $estagio->update($validated);
-            $estagio->alteracao = $request->alteracao;
+
+            $aditivo = new Aditivo;
+            $aditivo->alteracao = $request->alteracao;
+            $aditivo->estagio_id = $estagio->id;
+            $aditivo->save();
+
+            $estagio->last_status = $estagio->status;
+            $estagio->status = 'em_analise_tecnica';
             $estagio->save();
 
-            if($request->enviar_analise_tecnica_alteracao == 'enviar_analise_tecnica_alteracao'){
-                $estagio->alteracao = $request->alteracao;
-                $estagio->last_status = $estagio->status;
-                $estagio->status = 'em_analise_tecnica';
-                request()->session()->flash('alert-info', 'Enviado para análise do setor de graduação');
-                $estagio->save();
-                $pdf = PDF::loadView('pdfs.aditivo', compact('estagio'));
-                return $pdf->download('aditivo.pdf');
-            }
+            request()->session()->flash('alert-info', 'Enviado para análise do setor de graduação');
+            Mail::send(new alteracao_mail($estagio));
+        } else {
+            request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
+        }
+        return redirect("estagios/{$estagio->id}");
+    }
+
+    #Funções Rescisão
+
+    public function retornar_rescisao(Estagio $estagio){
+
+        if ( Gate::allows('empresa',$estagio->cnpj) | Gate::allows('admin')) {
+            $estagio->last_status = $estagio->status;
+            $estagio->status = 'concluido';
+            $estagio->save();
         } else {
             request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
         }
         return redirect("/estagios/{$estagio->id}");
-    }
+    }     
+    
+    public function avaliacao(Request $request, Estagio $estagio){
+
+        if (Gate::allows('parecerista')) {
+            $request->validate([
+                'avaliacao_empresa' => 'required',
+                'avaliacaodescricao' => 'required',
+            ]);
+            $estagio->avaliacao_empresa = $request->avaliacao_empresa;
+            $estagio->avaliacaodescricao = $request->avaliacaodescricao;
+            $estagio->save();
+        } else {
+            request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
+        }
+        return redirect("/estagios/{$estagio->id}");
+    }  
+
+    #Funções Cancelamento
+
+    public function cancelar_estagio(Estagio $estagio){
+
+        if ( Gate::allows('empresa',$estagio->cnpj) | Gate::allows('admin')) {
+                $estagio->last_status = $estagio->status;
+                $estagio->status = 'cancelado';
+                $estagio->save();
+            } else {
+                request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
+            }
+            return redirect("/estagios/{$estagio->id}");
+        }  
+
+        public function cancelar_cancelamento(Estagio $estagio){
+
+            if ( Gate::allows('admin')) {
+                    $estagio->last_status = $estagio->status;
+                    $estagio->status = 'em_analise_tecnica';
+                    $estagio->save();
+                } else {
+                    request()->session()->flash('alert-danger', 'Sem permissão para executar ação');
+                }
+                return redirect("/estagios/{$estagio->id}");
+            }      
 }

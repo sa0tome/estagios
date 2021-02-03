@@ -22,7 +22,7 @@ class PDFsController extends Controller
     public function termo(Estagio $estagio){
         if (Gate::allows('admin') | Gate::allows('parecerista') | Gate::allows('empresa',$estagio->cnpj)) {
             $pdf = PDF::loadView('pdfs.termo', compact('estagio'));
-            return $pdf->file('termo.pdf', $headers);
+            return $pdf->download('termo.pdf');
         }
         abort(403, 'Access denied');
     }
@@ -81,7 +81,7 @@ class PDFsController extends Controller
     }
 
     public function parecer(Estagio $estagio){
-        if (Gate::allows('admin') | Gate::allows('parecerista') | Gate::allows('empresa',$estagio->cnpj)) {
+        if (Gate::allows('admin') | Gate::allows('parecerista') ) {
             if($estagio->numparecerista){
                 $pdf = PDF::loadView('pdfs.parecer', compact('estagio'));
                 return $pdf->download('parecer.pdf');

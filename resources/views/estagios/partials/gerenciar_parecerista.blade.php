@@ -44,7 +44,7 @@
         <br>
         <a href="/pdfs/parecer/{{$estagio->id}}"target="_blank" >
         <i class="fas fa-file-pdf"></i> </a>
-        Visualizar PDF do Parecer de Mérito 
+        Gerar PDF do Parecer de Mérito 
     @endif
 
     @if(is_null($estagio->renovacao_parent_id))
@@ -55,7 +55,7 @@
         <br>
         <a href="/pdfs/termo/{{$estagio->id}}"target="_blank" >
         <i class="fas fa-file-pdf"></i> </a>
-        Visualizar PDF do Termo de Ciência 
+        Gerar PDF do Termo de Ciência 
     @else
         <br>
         <a onClick="return confirm('Tem certeza que deseja um email para a empresa?')" href="/emails/enviar_para_analise_tecnica_renovacao/{{$estagio->id}}">
@@ -64,8 +64,19 @@
         <br>
         <a href="/pdfs/renovacao/{{$estagio->id}}" target="_blank" >
         <i class="fas fa-file-pdf"></i> </a>
-        Visualizar PDF do Termo de Ciência para Renovação
+        Gerar PDF do Termo de Ciência para Renovação
     @endif    
+
+    @if(($estagio->aditivos)->isNotEmpty())
+        <br>
+        <a onClick="return confirm('Tem certeza que deseja um email para o parecerista?')" href="/emails/alteracao/{{$estagio->id}}">
+        <i class="fas fa-envelope-open-text"></i> </a>
+        Enviar E-mail contendo a alteração para o parecerista.
+        <br>
+        <a href="/pdfs/aditivo/{{$estagio->id}}" target="_blank" >
+        <i class="fas fa-file-pdf"></i> </a>
+        Gerar PDF do Parecer de Alteração
+    @endif
 
 <br>
   </div>

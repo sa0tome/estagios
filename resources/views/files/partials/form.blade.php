@@ -30,6 +30,7 @@
                 </thead>
                 <tbody>
                 @foreach($estagio->arquivos as $arquivo)
+                @if($arquivo->tipo_documento != 'Relatorio')
                     <tr>
                     <td>            
                     <a href="/files/{{$arquivo->id}}.pdf" type="application/pdf" target="pdf-frame"><i class="fas fa-file-pdf"></i> {{$arquivo->original_name}} </a>
@@ -45,6 +46,7 @@
                         </td>
                     @endcan('admin')
                     </tr>
+                @endif    
                 @endforeach
                 </tbody>
             </table>
@@ -52,11 +54,10 @@
     </div>
 
 </div>
-<hr>
-@endcan('admin_ou_empresa')
+@endcan
 
 @can('parecerista')
-
+<hr>
 <div class="row">
 
 <table class="table table-striped">
@@ -71,4 +72,4 @@
 
 </div>
 
-@endcan('parecerista')
+@endcan

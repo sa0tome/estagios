@@ -58,9 +58,6 @@ Análise técnica do setor de Graduação realizada por: {{ $estagio->analise_te
   @endcan('parecerista')
 @endif
 <br>
-@if($estagio->analise_alteracao_user)
-Análise técnica do aditivo de alterações realizada por: {{ $estagio->analise_alteracao_user->name  }}<br>
-@endif
 
 @switch($estagio->status)
 
@@ -99,7 +96,11 @@ Análise técnica do aditivo de alterações realizada por: {{ $estagio->analise
 
     @case('rescisao')
       @include('estagios.partials.rescisao')
-      @break                    
+      @break     
+
+    @case('cancelado')
+      @include('estagios.partials.cancelado')
+      @break                      
 
     @default
         <span>Something went wrong, please try again</span>
